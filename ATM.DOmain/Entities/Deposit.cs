@@ -32,5 +32,7 @@ namespace ATM.Domain.Entities
 
         public int AccountNumber { get; set; }
         public decimal Account { get; set; }
+
+
     }
 }

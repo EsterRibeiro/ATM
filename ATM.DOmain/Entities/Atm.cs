@@ -7,16 +7,17 @@ namespace ATM.Domain.Entities
     {
         private bool userAuthenticated; 
         private int currentAccountNumber; 
-        public Screen screen; 
-        private Keypad keypad; 
-        private CashDispenser cashDispenser; 
-        private DepositSlot depositSlot; 
-        private BankDatabase bankDatabase;
+        private Screen screen = new Screen(); 
+        private Keypad keypad = new Keypad(); 
+        private CashDispenser cashDispenser = new CashDispenser(); 
+        private DepositSlot depositSlot = new DepositSlot(); 
+        private BankDatabase bankDatabase = new BankDatabase();
 
-        public Atm(bool userAuthenticated, int currentAccountNumber, Keypad keypad, CashDispenser cashDispenser, DepositSlot depositSlot, BankDatabase bankDatabase)
+        public Atm(bool userAuthenticated, int currentAccountNumber, Screen screen,Keypad keypad, CashDispenser cashDispenser, DepositSlot depositSlot, BankDatabase bankDatabase)
         {
             this.userAuthenticated = userAuthenticated;
             this.currentAccountNumber = currentAccountNumber;
+            this.screen = screen;
             this.keypad = keypad;
             this.cashDispenser = cashDispenser;
             this.depositSlot = depositSlot;
@@ -45,14 +46,14 @@ namespace ATM.Domain.Entities
                 while (!userAuthenticated)
                 {
                     
-                    screen.DisplayMessageLine("\nWelcome!");
+                    screen.DisplayMessageLine("\nSeja bem vindx!");
                     AuthenticateUser(); 
                 }
 
                 PerformTransactions(); 
                 userAuthenticated = false; 
                 currentAccountNumber = 0; 
-                screen.DisplayMessageLine("\nThank you! Goodbye!");
+                screen.DisplayMessageLine("\nObrigada pela preferência! Até mais! :)");
             } 
         } 
 
@@ -60,11 +61,11 @@ namespace ATM.Domain.Entities
         private void AuthenticateUser()
         {
             
-            screen.DisplayMessage("\nPlease enter your account number: ");
+            screen.DisplayMessage("\nPor favor, digite o número da conta: ");
             int accountNumber = keypad.GetInput();
 
 
-            screen.DisplayMessage("\nEnter your PIN: ");
+            screen.DisplayMessage("\nDigite o PIN: ");
             int pin = keypad.GetInput();
 
 
@@ -76,7 +77,7 @@ namespace ATM.Domain.Entities
                 currentAccountNumber = accountNumber;
             else
                 screen.DisplayMessageLine(
-                      "Invalid account number or PIN. Please try again.");
+                      "Número da conta ou PIN inválido. Tente novamente.");
         } 
 
         
@@ -92,30 +93,71 @@ namespace ATM.Domain.Entities
                 int mainMenuSelection = DisplayMainMenu();
 
                 
+                
                 switch ((MenuOption)mainMenuSelection)
                 {
                     
                     case MenuOption.BALANCE_INQUIRY:
+                        decimal totalAmount;
+                        totalAmount = bankDatabase.GetTotalBalance(currentAccountNumber);
+                        screen.DisplayMessageLine("\nConta corrente: " + currentAccountNumber + "\nValor total da conta: " + totalAmount);
+
+                        break;
+
                     case MenuOption.WITHDRAWAL:
+                        int withdrawal = WithdrawalMenu();
+
+                        if (withdrawal == 6)
+                        {
+                            screen.DisplayMessageLine("Transação cancelada");
+                            break;
+                        }
+                        else
+                        {
+                            bankDatabase.Debit(currentAccountNumber, withdrawal);
+                            screen.DisplayMessageLine("\nSaque realizado com sucesso!");
+                        }
+
+                        break;
                     case MenuOption.DEPOSIT:
+                        int depositValue = DepositMenu();
+
+
+                        if (depositValue == 0)
+                        {
+                            screen.DisplayMessageLine("Transação cancelada");
+                            break;
+                        }
+                        else
+                        {
+                            bankDatabase.Credit(currentAccountNumber, depositValue);
+                            screen.DisplayMessageLine("\nQuantia depositada com sucesso!");
+                        }
+                        break;
                         
                         currentTransaction =
                            CreateTransaction(mainMenuSelection);
-                        currentTransaction.Execute(); 
+                        //currentTransaction.Execute(); 
                         break;
                     case MenuOption.EXIT_ATM:
-                        screen.DisplayMessageLine("\nExiting the system...");
+                        screen.DisplayMessageLine("\nSaindo do sistema...");
                         userExited = true; 
                         break;
                     default: 
                         screen.DisplayMessageLine(
-                           "\nYou did not enter a valid selection. Try again.");
+                           "\nVocê não digitou uma opção válida. Tente novamente.");
                         break;
                 } 
             } 
         } 
 
         
+        //private void BalanceInquiry()
+        //{ 
+        //    Transaction transaction = new BalanceInquiry(currentAccountNumber, amount);
+        //    transaction.Execute();
+        //}
+
         private int DisplayMainMenu()
         {
             screen.DisplayMessageLine("\nMain menu:");
@@ -125,9 +167,27 @@ namespace ATM.Domain.Entities
             screen.DisplayMessageLine("4 - Exit\n");
             screen.DisplayMessage("Enter a choice: ");
             return keypad.GetInput(); 
-        } 
+        }
 
-        
+        private int WithdrawalMenu()
+        {
+            screen.DisplayMessageLine("\nMenu de Saque");
+            screen.DisplayMessageLine("1 - $20     4 - $100");
+            screen.DisplayMessageLine("2 - $40     5 - $200");
+            screen.DisplayMessageLine("3 - $60     6 - Cancelar transação");
+            screen.DisplayMessage("Escolha uma quantia para o saque: ");
+            return keypad.GetInput();
+        }
+
+        private int DepositMenu()
+        {
+            screen.DisplayMessageLine("\nDeposito");
+            screen.DisplayMessageLine("0 - Digite zero para sair.");
+            screen.DisplayMessage("Digite a quantia que deseja depositar: ");
+            return keypad.GetInput();
+        }
+
+
         private Transaction CreateTransaction(int type)
         {
             Transaction temp = null; 

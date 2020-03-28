@@ -13,10 +13,9 @@ namespace ATM.Domain.Entities
         } 
 
        
-        public string DisplayMessageLine(string message)
+        public void DisplayMessageLine(string message)
         {
             Console.WriteLine(message);
-            return message;
         }
 
 
